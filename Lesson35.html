@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decorated Calculator</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+       
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #000000;
+            margin: 0;
+            padding: 0;
+        }
+
+        
+        #container {
+            width: 1000px;
+            height: 550px;
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+                        url('https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1000&q=80');
+            background-size: cover;
+            background-position: center;
+            margin: 20px auto;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        
+        #calculator {
+            width: 320px;
+            height: 520px;
+            background-color: #eaedef;
+            margin: 0 auto;
+            top: 15px;
+            position: relative;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+            overflow: hidden;
+        }
+
+        
+        #result {
+            height: 120px;
+        }
+
+        #history {
+            text-align: right;
+            height: 20px;
+            margin: 0 20px;
+            padding-top: 20px;
+            font-size: 15px;
+            color: #919191;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #output {
+            text-align: right;
+            height: 60px;
+            margin: 10px 20px;
+            font-size: 30px;
+            color: #000000;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 60px;
+            font-weight: 600;
+        }
+
+        
+        #keyboard {
+            height: 400px;
+        }
+
+        .operator, .number, .empty {
+            width: 50px;
+            height: 50px;
+            margin: 15px;
+            float: left;
+            border-radius: 50%;
+            border-width: 0;
+            font-weight: bold;
+            font-size: 15px;
+            font-family: 'Open Sans', sans-serif;
+            transition: background-color 0.15s ease;
+        }
+
+        .number, .empty {
+            background-color: #eaedef;
+        }
+
+        .number, .operator {
+            cursor: pointer;
+        }
+
+        .operator:active, .number:active, .empty:active {
+            font-size: 13px;
+        }
+
+        .operator:focus, .number:focus, .empty:focus {
+            outline: none;
+        }
+
+        
+        button:nth-child(4) {
+            font-size: 20px;
+            background-color: #20b2aa;
+            color: #ffffff;
+        }
+
+        button:nth-child(8) {
+            font-size: 20px;
+            background-color: #ffa07a;
+            color: #ffffff;
+        }
+
+        button:nth-child(12) {
+            font-size: 20px;
+            background-color: #f08080;
+            color: #ffffff;
+        }
+
+        button:nth-child(16) {
+            font-size: 20px;
+            background-color: #7d93e0;
+            color: #ffffff;
+        }
+
+        button:nth-child(20) {
+            font-size: 20px;
+            background-color: #94b4a4;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+
+    <div id="container">
+       
+        <div id="calculator">
+       
+            <div id="result">
+                <div id="history">
+                    <p id="history-value"></p>
+                </div>
+                <div id="output">
+                    <p id="output-value">0</p>
+                </div>
+            </div>
+
+
+            <div id="keyboard">
+     
+                <button class="operator" id="clear" title="Clear (Escape)">C</button>
+                <button class="operator" id="backspace" title="Clear Entry (Backspace)">CE</button>
+                <button class="operator" id="%" title="Percentage">%</button>
+                <button class="operator" id="/" title="Divide">&#247;</button>
+
+
+                <button class="number" id="7">7</button>
+                <button class="number" id="8">8</button>
+                <button class="number" id="9">9</button>
+                <button class="operator" id="*" title="Multiply">&times;</button>
+
+    
+                <button class="number" id="4">4</button>
+                <button class="number" id="5">5</button>
+                <button class="number" id="6">6</button>
+                <button class="operator" id="-" title="Subtract">-</button>
+
+            
+                <button class="number" id="1">1</button>
+                <button class="number" id="2">2</button>
+                <button class="number" id="3">3</button>
+                <button class="operator" id="+" title="Add">+</button>
+
+        
+                <button class="empty" id="empty-left"></button>
+                <button class="number" id="0">0</button>
+                <button class="number" id="." title="Decimal">.</button>
+                <button class="operator" id="=" title="Calculate (Enter)">=</button>
+            </div>
+        </div>
+    </div>
+
+   
+    <script>
+
+        let historyText = '';
+        let currentInput = '0';
+        let firstOperand = null;
+        let operator = null;
+        let waitingForSecondOperand = false;
+
+      
+        const historyDisplay = document.getElementById('history-value');
+        const outputDisplay = document.getElementById('output-value');
+
+  
+        function formatFormattedNumber(numStr) {
+            if (numStr === 'Error' || numStr === 'NaN') return 'Error';
+            if (numStr === '') return '0';
+            
+            const parts = numStr.split('.');
+            let integerPart = parts[0];
+            const decimalPart = parts[1] !== undefined ? '.' + parts[1] : '';
+
+            if (!isNaN(integerPart) && integerPart !== '' && integerPart !== '-') {
+                integerPart = Number(integerPart).toLocaleString('en-US', { maximumFractionDigits: 0 });
+            }
+
+            const fullStr = integerPart + decimalPart;
+            if (fullStr.length > 12) {
+                const num = Number(numStr);
+                if (!isNaN(num)) {
+                    return num.toPrecision(6);
+                }
+            }
+            return fullStr;
+        }
+
+        
+        function updateDisplay() {
+            outputDisplay.innerText = formatFormattedNumber(currentInput);
+            historyDisplay.innerText = historyText;
+        }
+
+        
+        function inputDigit(digit) {
+            if (waitingForSecondOperand) {
+                currentInput = digit === '.' ? '0.' : digit;
+                waitingForSecondOperand = false;
+            } else {
+                if (digit === '.') {
+                    if (!currentInput.includes('.')) {
+                        currentInput += '.';
+                    }
+                } else {
+                    currentInput = currentInput === '0' ? digit : currentInput + digit;
+                }
+            }
+            updateDisplay();
+        }
+
+        
+        function performCalculation(first, second, op) {
+            switch (op) {
+                case '+': return first + second;
+                case '-': return first - second;
+                case '*': return first * second;
+                case '/': return second === 0 ? 'Error' : first / second;
+                default: return second;
+            }
+        }
+
+   
+        function getSymbol(op) {
+            if (op === '/') return '÷';
+            if (op === '*') return '×';
+            return op;
+        }
+
+  
+        function handleOperator(nextOperator) {
+            const inputValue = parseFloat(currentInput);
+
+     
+            if (nextOperator === 'C') {
+                currentInput = '0';
+                historyText = '';
+                firstOperand = null;
+                operator = null;
+                waitingForSecondOperand = false;
+                updateDisplay();
+                return;
+            }
+
+            
+            if (nextOperator === 'CE') {
+                if (currentInput === 'Error') {
+                    currentInput = '0';
+                } else if (currentInput.length > 1) {
+                    currentInput = currentInput.slice(0, -1);
+                } else {
+                    currentInput = '0';
+                }
+                updateDisplay();
+                return;
+            }
+
+    
+            if (nextOperator === '%') {
+                if (currentInput !== 'Error') {
+                    const result = parseFloat(currentInput) / 100;
+                    currentInput = String(result);
+                    updateDisplay();
+                }
+                return;
+            }
+
+            if (currentInput === 'Error') return;
+
+            if (operator && waitingForSecondOperand) {
+                if (nextOperator !== '=') {
+                    operator = nextOperator;
+                    historyText = `${formatFormattedNumber(String(firstOperand))} ${getSymbol(operator)}`;
+                    updateDisplay();
+                }
+                return;
+            }
+
+            if (firstOperand === null && !isNaN(inputValue)) {
+                firstOperand = inputValue;
+            } else if (operator) {
+                const result = performCalculation(firstOperand, inputValue, operator);
+
+                if (result === 'Error') {
+                    currentInput = 'Error';
+                    historyText = '';
+                    firstOperand = null;
+                    operator = null;
+                    waitingForSecondOperand = false;
+                    updateDisplay();
+                    return;
+                }
+
+    
+                const precisionResult = Math.round(result * 1e10) / 1e10;
+                currentInput = String(precisionResult);
+                firstOperand = precisionResult;
+            }
+
+            if (nextOperator === '=') {
+                if (operator && !waitingForSecondOperand) {
+                    historyText = `${formatFormattedNumber(String(firstOperand))} ${getSymbol(operator)} ${formatFormattedNumber(String(inputValue))} =`;
+                    operator = null;
+                    firstOperand = null;
+                    waitingForSecondOperand = true;
+                }
+            } else {
+                operator = nextOperator;
+                historyText = `${formatFormattedNumber(String(firstOperand))} ${getSymbol(operator)}`;
+                waitingForSecondOperand = true;
+            }
+
+            updateDisplay();
+        }
+
+
+        document.querySelectorAll('#keyboard button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const target = e.currentTarget;
+                const id = target.id;
+
+                if (target.classList.contains('number')) {
+                    inputDigit(id);
+                } else if (target.classList.contains('operator')) {
+                    handleOperator(id);
+                }
+            });
+        });
+
+     
+        window.addEventListener('keydown', (e) => {
+            const key = e.key;
+
+            if (key >= '0' && key <= '9') {
+                inputDigit(key);
+            } else if (key === '.') {
+                inputDigit('.');
+            } else if (key === '+' || key === '-' || key === '*' || key === '/') {
+                handleOperator(key);
+            } else if (key === 'Enter' || key === '=') {
+                e.preventDefault();
+                handleOperator('=');
+            } else if (key === 'Backspace') {
+                handleOperator('CE');
+            } else if (key === 'Escape') {
+                handleOperator('C');
+            } else if (key === '%') {
+                handleOperator('%');
+            }
+        });
+
+
+        updateDisplay();
+    </script>
+</body>
+</html>
